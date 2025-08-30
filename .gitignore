@@ -7,7 +7,7 @@
 *.test
 
 # Output of go build
-currentz
+/bin/currentz
 
 # Vendor
 /vendor/
