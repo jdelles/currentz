@@ -20,3 +20,7 @@ currentz
 # Environment
 .env
 note.md
+finance_data.json
+
+# Stupid Mac
+.DS_Store
