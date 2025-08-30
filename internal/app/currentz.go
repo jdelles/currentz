@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jdelles/currentz/internal/config"
 	"github.com/jdelles/currentz/internal/database"
 	"github.com/jdelles/currentz/internal/service"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type FinanceApp struct {
 	service *service.FinanceService
-	pool *pgxpool.Pool
+	pool    *pgxpool.Pool
 }
 
 func NewFinanceApp(cfg *config.Config) (*FinanceApp, error) {
@@ -187,7 +187,7 @@ func (fa *FinanceApp) viewTransactions(ctx context.Context) error {
 		symbol := "💰"
 		amount, _ := service.NumericToFloat64(tx.Amount)
 		displayAmount := amount
-		
+
 		if tx.Type == "expense" {
 			symbol = "💸"
 			displayAmount = -amount // Show positive amount for display
@@ -290,7 +290,7 @@ func (fa *FinanceApp) generateForecast(ctx context.Context) error {
 		symbol := "💰"
 		amount, _ := service.NumericToFloat64(tx.Amount)
 		displayAmount := amount
-		
+
 		if tx.Type == "expense" {
 			symbol = "💸"
 			displayAmount = -amount

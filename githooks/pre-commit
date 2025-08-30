@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "🔍 Running pre-commit checks..."
+
+# Format code
+echo "➡️ go fmt"
+go fmt ./...
+git add -u # add any fmt changes
+
+# Vet
+echo "➡️ go vet"
+go vet ./...
+
+# Staticcheck (optional but recommended)
+if command -v staticcheck >/dev/null 2>&1; then
+  echo "➡️ staticcheck"
+  staticcheck ./...
+else
+  echo "⚠️ staticcheck not installed (skipping). Install: go install honnef.co/go/tools/cmd/staticcheck@latest"
+fi
+
+# Ensure tidy modules
+echo "➡️ go mod tidy check"
+go mod tidy
+if ! git diff --quiet go.mod go.sum; then
+  echo "❌ go.mod/go.sum not tidy — committing updated versions"
+  git add go.mod go.sum
+fi
+
+# Secrets scan (optional: requires gitleaks)
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "➡️ gitleaks"
+  gitleaks protect --staged || {
+    echo "❌ Potential secret detected!"
+    exit 1
+  }
+else
+  echo "⚠️ gitleaks not installed (skipping)."
+fi
+
+echo "✅ Pre-commit checks passed"

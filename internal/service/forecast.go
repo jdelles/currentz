@@ -84,7 +84,7 @@ func (fs *FinanceService) Calculate90DayForecast(ctx context.Context, startingBa
 
 		for _, tx := range transactions {
 			// tx.Date is pgtype.Date; use its Time directly
-			if tx.Date.Time.Truncate(24*time.Hour).Equal(date) {
+			if tx.Date.Time.Truncate(24 * time.Hour).Equal(date) {
 				amt, err := NumericToFloat64(tx.Amount)
 				if err != nil {
 					continue

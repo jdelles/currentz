@@ -1,4 +1,4 @@
-.PHONY: build run migrate-up migrate-down migrate-status clean sqlc-generate deps setup-db dev-setup install-tools
+.PHONY: build run migrate-up migrate-down migrate-status clean sqlc-generate deps setup-db dev-setup install-tools install-hooks verify-hooks
 
 # Default database URL for development
 DB_URL ?= postgres://jamesdelles@localhost:5432/personal_finance?sslmode=disable
@@ -38,8 +38,22 @@ clean:
 setup-db:
 	createdb personal_finance || true
 
+# Install repo-scoped git hooks (shared via githooks/)
+install-hooks:
+	@echo "🔗 Setting core.hooksPath to ./githooks"
+	git config core.hooksPath githooks
+	@echo "🔒 Marking hooks executable"
+	chmod +x githooks/* || true
+	@echo "✅ Hooks installed. They'll run on commit/push."
+
+# Quick check that hooks are wired up
+verify-hooks:
+	@echo "core.hooksPath = $$(git config --get core.hooksPath)"
+	@echo "Listing hooks in ./githooks:"
+	@ls -l githooks || true
+
 # One-shot dev setup
-dev-setup: setup-db deps sqlc-generate migrate-up
+dev-setup: setup-db deps sqlc-generate migrate-up install-hooks verify-hooks
 
 # Install CLI tools
 install-tools:

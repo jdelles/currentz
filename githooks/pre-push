@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "🚀 Running pre-push checks..."
+
+# Run full test suite
+echo "➡️ go test ./..."
+go test ./...
+
+# Lint (golangci-lint recommended)
+if command -v golangci-lint >/dev/null 2>&1; then
+  echo "➡️ golangci-lint"
+  golangci-lint run ./...
+else
+  echo "⚠️ golangci-lint not installed (skipping). Install: https://golangci-lint.run/usage/install/"
+fi
+
+# Build check
+echo "➡️ go build"
+go build ./...
+
+echo "✅ Pre-push checks passed"
