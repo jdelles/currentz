@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/jdelles/currentz/internal/app"
 	"github.com/jdelles/currentz/internal/config"
@@ -26,6 +25,5 @@ func main() {
 
 	if err := financeApp.Run(); err != nil {
 		log.Fatalf("Application error: %v", err)
-		os.Exit(1)
 	}
 }

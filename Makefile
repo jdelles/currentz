@@ -1,4 +1,4 @@
-.PHONY: build run migrate-up migrate-down migrate-status clean sqlc-generate deps setup-db dev-setup install-tools install-hooks verify-hooks
+.PHONY: build run migrate-up migrate-down migrate-status clean sqlc-generate deps setup-db dev-setup install-tools install-hooks verify-hooks copy-env
 
 # Default database URL for development
 DB_URL ?= postgres://jamesdelles@localhost:5432/personal_finance?sslmode=disable
@@ -58,5 +58,8 @@ verify-hooks:
 	@echo "Listing hooks in ./githooks:"
 	@ls -l githooks || true
 
+copy-env:
+	@if [ ! -f .env ]; then cp .env.sample .env; fi
+
 # One-shot dev setup
-dev-setup: setup-db deps sqlc-generate migrate-up install-tools install-hooks verify-hooks
+dev-setup: copy-env setup-db deps sqlc-generate migrate-up install-tools install-hooks verify-hooks

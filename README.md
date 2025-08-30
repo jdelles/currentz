@@ -29,9 +29,9 @@ git clone https://github.com/jdelles/currentz.git
 cd currentz
 ```
 
-3. **Generate sqlc code, setup, and other important things:**
+3. **Local Setup**
 ```bash
-make dev-setup
+make dev-setup # Edit .env if you need to override defaults.
 ```
 
 4. **Run the application:**

@@ -27,7 +27,7 @@ func NewFinanceApp(cfg *config.Config) (*FinanceApp, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
 	}
-	queries := database.New(pool) // sqlc-generated constructor
+	queries := database.New(pool)
 
 	return &FinanceApp{
 		pool:    pool,

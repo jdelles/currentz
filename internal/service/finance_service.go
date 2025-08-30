@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool" // 👈 NEW
 	"github.com/jdelles/currentz/internal/database"
 )
 
@@ -20,11 +21,36 @@ type DailyCashFlow struct {
 }
 
 type FinanceService struct {
-	db database.Querier
+	db   database.Querier
+	pool *pgxpool.Pool
 }
 
 func NewFinanceService(db database.Querier) *FinanceService {
 	return &FinanceService{db: db}
+}
+
+func NewFinanceServiceFromURL(ctx context.Context, dbURL string) (*FinanceService, error) {
+	pool, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
+	}
+	return &FinanceService{
+		db:   database.New(pool), // sqlc Queries bound to pool
+		pool: pool,               // remember so we can Close()
+	}, nil
+}
+
+func NewFinanceServiceFromPool(pool *pgxpool.Pool) *FinanceService {
+	return &FinanceService{
+		db:   database.New(pool),
+		pool: pool,
+	}
+}
+
+func (fs *FinanceService) Close() {
+	if fs.pool != nil {
+		fs.pool.Close()
+	}
 }
 
 func (fs *FinanceService) GetStartingBalance(ctx context.Context) (float64, error) {
@@ -83,7 +109,6 @@ func (fs *FinanceService) Calculate90DayForecast(ctx context.Context, startingBa
 		dailyChange := 0.0
 
 		for _, tx := range transactions {
-			// tx.Date is pgtype.Date; use its Time directly
 			if tx.Date.Time.Truncate(24 * time.Hour).Equal(date) {
 				amt, err := NumericToFloat64(tx.Amount)
 				if err != nil {
@@ -131,38 +156,30 @@ func (fs *FinanceService) GetUpcomingTransactions(ctx context.Context, days int)
 
 /*** helpers ***/
 
-// makePgDate builds a pgtype.Date via Scan to avoid relying on struct fields.
 func makePgDate(t time.Time) pgtype.Date {
 	var d pgtype.Date
-	_ = d.Scan(t) // pgtype.Date implements sql.Scanner
+	_ = d.Scan(t)
 	return d
 }
 
-// makePgNumeric builds a pgtype.Numeric via Scan of a decimal string.
 func makePgNumeric(f float64) pgtype.Numeric {
 	var n pgtype.Numeric
 	_ = n.Scan(fmt.Sprintf("%.2f", f))
 	return n
 }
 
-// numericToFloat64 reconstructs a float64 from pgtype.Numeric's Int and Exp.
 func NumericToFloat64(n pgtype.Numeric) (float64, error) {
-	// If not present or no integer component, treat as zero.
 	if n.Int == nil {
 		return 0, nil
 	}
-
 	r := new(big.Rat).SetInt(n.Int)
 	if n.Exp > 0 {
-		// multiply by 10^Exp
 		factor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(n.Exp)), nil)
 		r.Mul(r, new(big.Rat).SetInt(factor))
 	} else if n.Exp < 0 {
-		// divide by 10^{-Exp}
 		factor := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(-n.Exp)), nil)
 		r.Quo(r, new(big.Rat).SetInt(factor))
 	}
-
 	f, _ := r.Float64()
 	return f, nil
 }
