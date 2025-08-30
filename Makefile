@@ -1,33 +1,47 @@
-# Makefile
+.PHONY: build run migrate-up migrate-down migrate-status clean sqlc-generate deps setup-db dev-setup install-tools
 
-include .env
-export $(shell sed 's/=.*//' .env)
+# Default database URL for development
+DB_URL ?= postgres://jamesdelles@localhost:5432/personal_finance?sslmode=disable
 
-MIGRATIONS_DIR = internal/db/migrations
-DBURL = $(DATABASE_URL)
+# Build the application
+build:
+	go build -o bin/currentz cmd/currentz/main.go
 
-.PHONY: db_up db_down db_logs psql migrate_up migrate_down migrate_status migrate_create
+# Run the application
+run:
+	go run cmd/currentz/main.go
 
-db_up:
-	docker compose up -d
+# Install dependencies
+deps:
+	go mod tidy
+	go mod download
 
-db_down:
-	docker compose down
+# Generate sqlc code (uses paths from sqlc.yaml)
+sqlc-generate:
+	sqlc generate
 
-db_logs:
-	docker compose logs -f db
+# Database migrations (point to your actual migrations folder)
+migrate-up:
+	goose -dir sql/migrations postgres "$(DB_URL)" up
 
-psql:
-	docker exec -it currentz_db psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+migrate-down:
+	goose -dir sql/migrations postgres "$(DB_URL)" down
 
-migrate_up:
-	goose -dir $(MIGRATIONS_DIR) postgres "$(DBURL)" up
+migrate-status:
+	goose -dir sql/migrations postgres "$(DB_URL)" status
 
-migrate_down:
-	goose -dir $(MIGRATIONS_DIR) postgres "$(DBURL)" down
+# Clean build artifacts
+clean:
+	rm -rf bin/
 
-migrate_status:
-	goose -dir $(MIGRATIONS_DIR) postgres "$(DBURL)" status
+# Setup database
+setup-db:
+	createdb personal_finance || true
 
-migrate_create:
-	@read -p "Migration name: " name; goose -dir $(MIGRATIONS_DIR) create $$name sql
+# One-shot dev setup
+dev-setup: setup-db deps sqlc-generate migrate-up
+
+# Install CLI tools
+install-tools:
+	go install github.com/pressly/goose/v3/cmd/goose@latest
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
