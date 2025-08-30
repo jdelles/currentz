@@ -1,27 +1,19 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "Setting up Personal Finance App with sqlc..."
+# -----------------------------------------------------------------------------
+# setup.sh
+#
+# This script is just a shortcut. 
+# -----------------------------------------------------------------------------
 
-# Install required tools
-echo "Installing tools..."
-go install github.com/pressly/goose/v3/cmd/goose@latest
-go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+echo "🚀 Installing tools..."
+make install-tools
 
-# Create database if it doesn't exist
-echo "Setting up database..."
-createdb personal_finance 2>/dev/null || echo "Database already exists"
+echo "🛠 Setting up development environment..."
+make dev-setup
 
-# Install Go dependencies
-echo "Installing dependencies..."
-go mod tidy
+echo "📦 Building the binary..."
+make build
 
-# Generate sqlc code
-echo "Generating sqlc code..."
-sqlc generate
-
-# Run migrations
-echo "Running migrations..."
-make migrate-up
-
-echo "Setup complete! Run 'make run' to start the application."
+echo "✅ Setup complete! Run the app with: ./bin/currentz or make run"
