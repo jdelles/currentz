@@ -59,4 +59,4 @@ verify-hooks:
 	@ls -l githooks || true
 
 # One-shot dev setup
-dev-setup: setup-db deps sqlc-generate migrate-up install-hooks verify-hooks
+dev-setup: setup-db deps sqlc-generate migrate-up install-tools install-hooks verify-hooks
