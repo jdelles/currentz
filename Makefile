@@ -38,6 +38,12 @@ clean:
 setup-db:
 	createdb personal_finance || true
 
+# Install CLI tools needed for development
+install-tools:
+	go install github.com/pressly/goose/v3/cmd/goose@latest
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+	go install github.com/zricethezav/gitleaks/v8@latest
+
 # Install repo-scoped git hooks (shared via githooks/)
 install-hooks:
 	@echo "🔗 Setting core.hooksPath to ./githooks"
@@ -54,8 +60,3 @@ verify-hooks:
 
 # One-shot dev setup
 dev-setup: setup-db deps sqlc-generate migrate-up install-hooks verify-hooks
-
-# Install CLI tools
-install-tools:
-	go install github.com/pressly/goose/v3/cmd/goose@latest
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
