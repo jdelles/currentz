@@ -29,11 +29,9 @@ git clone https://github.com/jdelles/currentz.git
 cd currentz
 ```
 
-3. **Generate sqlc code, setup, and build:**
+3. **Generate sqlc code, setup, and other important things:**
 ```bash
-make install-tools   # install goose + sqlc
-make dev-setup       # create db, run migrations, generate code
-make build
+make dev-setup
 ```
 
 4. **Run the application:**
