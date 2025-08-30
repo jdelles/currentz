@@ -1,4 +1,4 @@
-# Binaries
+# Go binaries / test outputs
 *.exe
 *.exe~
 *.dll
@@ -9,7 +9,10 @@
 # Output of go build
 /bin/currentz
 
-# Vendor
+# Go coverage files
+*.out
+
+# Dependency directories
 /vendor/
 
 # IDE/editor
@@ -17,10 +20,10 @@
 .vscode/
 *.swp
 
-# Environment
+# Environment / local data
 .env
 note.md
 finance_data.json
 
-# Stupid Mac
+# macOS system files
 .DS_Store
