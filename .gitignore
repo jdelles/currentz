@@ -16,3 +16,6 @@ currentz
 .idea/
 .vscode/
 *.swp
+
+# Environment
+.env
