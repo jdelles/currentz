@@ -281,7 +281,7 @@ func (fa *FinanceApp) generateForecast(ctx context.Context) error {
 		}
 
 		daysFromNow := int(tx.Date.Time.Sub(today).Hours() / 24)
-		fmt.Printf("%s %s (%d days) | $%8.2f | %s\n",
+		fmt.Printf("%s %s (%2d days) | $%10.2f | %s\n",
 			symbol,
 			tx.Date.Time.Format("Jan 02"),
 			daysFromNow,
