@@ -32,7 +32,6 @@ func Load() (*Config, error) {
 		SSLMode:  getEnv("DB_SSLMODE", "disable"),
 	}
 
-	// Build connection string
 	if cfg.Password != "" {
 		cfg.DatabaseURL = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 			cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode)

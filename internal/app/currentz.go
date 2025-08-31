@@ -166,17 +166,20 @@ func (fa *FinanceApp) addExpense(ctx context.Context) error {
 }
 
 func (fa *FinanceApp) viewTransactions(ctx context.Context) error {
-	transactions, err := fa.service.GetAllTransactions(ctx)
+	start := time.Now().AddDate(0, 0, -30).Truncate(24 * time.Hour)
+	end := time.Now().AddDate(0, 0, 30).Truncate(24 * time.Hour)
+
+	transactions, err := fa.service.GetTransactionsWithRecurringsBetween(ctx, start, end)
 	if err != nil {
 		return fmt.Errorf("failed to load transactions: %w", err)
 	}
 
 	if len(transactions) == 0 {
-		fmt.Println("No transactions recorded yet.")
+		fmt.Println("No transactions in the last/next 30 days.")
 		return nil
 	}
 
-	fmt.Println("\n📋 Recorded Transactions")
+	fmt.Println("\n📋 Transactions (Past 30 days → Next 30 days)")
 	fmt.Println("=" + strings.Repeat("=", 70))
 
 	for _, tx := range transactions {
@@ -189,8 +192,14 @@ func (fa *FinanceApp) viewTransactions(ctx context.Context) error {
 			displayAmount = -amount
 		}
 
-		fmt.Printf("[%d] %s %s | $%8.2f | %s\n",
-			tx.ID,
+		id := tx.ID
+		idLabel := fmt.Sprintf("%d", id)
+		if id == 0 {
+			idLabel = "R"
+		}
+
+		fmt.Printf("[%s] %s %s | $%8.2f | %s\n",
+			idLabel,
 			symbol,
 			tx.Date.Time.Format("Jan 02, 2006"),
 			displayAmount,

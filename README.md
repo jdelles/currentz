@@ -90,19 +90,14 @@ currentz/
 │   ├── config/       # config loading (expects DB_URL)
 │   ├── database/     # sqlc-generated code (models & queries)
 │   └── service/      # business logic (forecasting, helpers)
-├── sql/
-│   ├── migrations/   # goose migrations
-│   └── queries/      # sqlc query files
-├── scripts/
-│   └── setup.sh
-├── Makefile
-├── sqlc.yaml
-└── go.mod
+└── sql/
+    ├── migrations/   # goose migrations
+    └── queries/      # sqlc query files
 ```
 
 ## 🛤 Roadmap
 
 - [ ] Transaction import (CSV/OFX)  
-- [ ] Recurring events & bills & PAYCHECKS 💰 
+- [X] Recurring events & bills & PAYCHECKS 💰 
 - [ ] More forecasts & charts  
 - [ ] An actual UI for richer experience... 

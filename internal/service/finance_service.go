@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
 	"time"
 
@@ -95,12 +96,21 @@ func (fs *FinanceService) DeleteTransaction(ctx context.Context, id int32) error
 }
 
 func (fs *FinanceService) Calculate90DayForecast(ctx context.Context, startingBalance float64) ([]DailyCashFlow, error) {
-	transactions, err := fs.db.GetAllTransactions(ctx)
+	oneOffs, err := fs.db.GetAllTransactions(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	today := time.Now().Truncate(24 * time.Hour)
+	windowEnd := today.AddDate(0, 0, 89)
+
+	recs, err := fs.ExpandRecurringBetween(ctx, today, windowEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	all := append(oneOffs, recs...)
+
 	forecast := make([]DailyCashFlow, 90)
 	currentBalance := startingBalance
 
@@ -108,7 +118,7 @@ func (fs *FinanceService) Calculate90DayForecast(ctx context.Context, startingBa
 		date := today.AddDate(0, 0, i)
 		dailyChange := 0.0
 
-		for _, tx := range transactions {
+		for _, tx := range all {
 			if tx.Date.Time.Truncate(24 * time.Hour).Equal(date) {
 				amt, err := NumericToFloat64(tx.Amount)
 				if err != nil {
@@ -145,16 +155,10 @@ func (fs *FinanceService) FindLowestPoint(forecast []DailyCashFlow) (DailyCashFl
 }
 
 func (fs *FinanceService) GetUpcomingTransactions(ctx context.Context, days int) ([]Transaction, error) {
-	today := time.Now().Truncate(24 * time.Hour)
-	endDate := today.AddDate(0, 0, days)
-
-	return fs.db.GetTransactionsByDateRange(ctx, database.GetTransactionsByDateRangeParams{
-		Date:   makePgDate(today),
-		Date_2: makePgDate(endDate),
-	})
+	start := time.Now().Truncate(24 * time.Hour)
+	end := start.AddDate(0, 0, days)
+	return fs.GetTransactionsWithRecurringsBetween(ctx, start, end)
 }
-
-/*** helpers ***/
 
 func makePgDate(t time.Time) pgtype.Date {
 	var d pgtype.Date
@@ -182,4 +186,29 @@ func NumericToFloat64(n pgtype.Numeric) (float64, error) {
 	}
 	f, _ := r.Float64()
 	return f, nil
+}
+
+func (fs *FinanceService) GetTransactionsWithRecurringsBetween(ctx context.Context, start, end time.Time) ([]Transaction, error) {
+	oneOffs, err := fs.db.GetTransactionsByDateRange(ctx, database.GetTransactionsByDateRangeParams{
+		Date:   makePgDate(start),
+		Date_2: makePgDate(end),
+	})
+	if err != nil {
+		return nil, err
+	}
+	recs, err := fs.ExpandRecurringBetween(ctx, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	all := append(oneOffs, recs...)
+	sort.SliceStable(all, func(i, j int) bool {
+		ti := all[i].Date.Time
+		tj := all[j].Date.Time
+		if ti.Equal(tj) {
+			return all[i].Description < all[j].Description
+		}
+		return ti.Before(tj)
+	})
+	return all, nil
 }
