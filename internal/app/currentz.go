@@ -481,6 +481,8 @@ func DisplayChart(forecast []service.DailyCashFlow) {
 		}
 	}
 
+	fmt.Printf("Balance Range: $%.2f to $%.2f\n\n", minBalance, maxBalance)
+
 	chartWidth := 30
 
 	rangeSpan := maxBalance - minBalance
