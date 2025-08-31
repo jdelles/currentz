@@ -1,7 +1,16 @@
-.PHONY: build run migrate-up migrate-down migrate-status clean sqlc-generate deps setup-db dev-setup install-tools install-hooks verify-hooks copy-env
+ifneq (,$(wildcard .env))
+include .env
+export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env)
+endif
 
-# Default database URL for development
-DB_URL ?= postgres://jamesdelles@localhost:5432/personal_finance?sslmode=disable
+.PHONY: build run migrate-up migrate-down migrate-status clean sqlc-generate deps setup-db dev-setup install-tools install-hooks verify-hooks copy-env print-env
+
+DB_USER ?= $(shell id -un 2>/dev/null || whoami)
+DB_HOST ?= localhost
+DB_PORT ?= 5432
+DB_NAME ?= personal_finance
+DB_URL ?= postgres://$(DB_USER)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+export DB_URL
 
 # Build the application
 build:
@@ -20,15 +29,17 @@ deps:
 sqlc-generate:
 	sqlc generate
 
+MIGRATIONS_DIR ?= sql/migrations
+
 # Database migrations 
 migrate-up:
-	goose -dir sql/migrations postgres "$(DB_URL)" up
+	goose -dir $(MIGRATIONS_DIR) postgres "$(DB_URL)" up
 
 migrate-down:
-	goose -dir sql/migrations postgres "$(DB_URL)" down
+	goose -dir $(MIGRATIONS_DIR) postgres "$(DB_URL)" down
 
 migrate-status:
-	goose -dir sql/migrations postgres "$(DB_URL)" status
+	goose -dir $(MIGRATIONS_DIR) postgres "$(DB_URL)" status
 
 # Clean build artifacts
 clean:
@@ -36,7 +47,7 @@ clean:
 
 # Setup database
 setup-db:
-	createdb personal_finance || true
+	createdb $(DB_NAME) || true
 
 # Install CLI tools needed for development
 install-tools:
@@ -58,8 +69,19 @@ verify-hooks:
 	@echo "Listing hooks in ./githooks:"
 	@ls -l githooks || true
 
+# Copies .env.example to .env if .env doesn't already exist
 copy-env:
-	@if [ ! -f .env ]; then cp .env.sample .env; fi
+	@test -f .env || cp .env.example .env
+	@echo "✅ .env ready"
+
+# Prints environment variables to confirm they were set 
+print-env:
+	@echo "DB_USER=$(DB_USER)"
+	@echo "DB_HOST=$(DB_HOST)"
+	@echo "DB_PORT=$(DB_PORT)"
+	@echo "DB_NAME=$(DB_NAME)"
+	@echo "DB_URL=$(DB_URL)"
+	@echo "MIGRATIONS_DIR=$(MIGRATIONS_DIR)"
 
 # One-shot dev setup
 dev-setup: copy-env setup-db deps sqlc-generate migrate-up install-tools install-hooks verify-hooks

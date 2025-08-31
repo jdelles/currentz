@@ -51,19 +51,20 @@ Options:
 2. Add Expense
 3. View Transactions
 4. Delete Transaction
-5. Generate Forecast
-6. Update Starting Balance
-7. Manage Recurring Transactions
+5. Manage Recurring Transactions
+6. Generate Forecast
+7. Update Starting Balance
 8. Exit
 
-Example Transaction list: 
+**View Transactions:**  
 
-📋 Recorded Transactions
+📋 Transactions (Past 30 days → Next 30 days)
 =======================================================================
-[1] 💰 Jan 02, 2025 | $   500.00 | Paycheck  
-[2] 💸 Jan 05, 2025 | $  -150.00 | Groceries  
+[5] 💸 Aug 31, 2025 | $  175.00 | amazon cc  
+[R] 💸 Sep 06, 2025 | $  121.00 | bday gift  
+[R] 💰 Sep 12, 2025 | $ 2525.00 | payday  
 
-Example forecast chart: 
+**Generate Forecast:**  
 
 📊 90-Day Cash Flow Forecast
 ============================================================

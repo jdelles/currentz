@@ -67,9 +67,9 @@ func (fa *FinanceApp) mainLoop(ctx context.Context) error {
 		fmt.Println("2. Add Expense")
 		fmt.Println("3. View Transactions")
 		fmt.Println("4. Delete Transaction")
-		fmt.Println("5. Generate Forecast")
-		fmt.Println("6. Update Starting Balance")
-		fmt.Println("7. Manage Recurring Transactions")
+		fmt.Println("5. Manage Recurring Transactions")
+		fmt.Println("6. Generate Forecast")
+		fmt.Println("7. Update Starting Balance")
 		fmt.Println("8. Exit")
 
 		choice := getUserInput("Choose an option (1-8): ")
@@ -92,15 +92,15 @@ func (fa *FinanceApp) mainLoop(ctx context.Context) error {
 				fmt.Printf("Error: %v\n", err)
 			}
 		case "5":
-			if err := fa.generateForecast(ctx); err != nil {
+			if err := fa.manageRecurring(ctx); err != nil {
 				fmt.Printf("Error: %v\n", err)
 			}
 		case "6":
-			if err := fa.updateStartingBalance(ctx); err != nil {
+			if err := fa.generateForecast(ctx); err != nil {
 				fmt.Printf("Error: %v\n", err)
 			}
 		case "7":
-			if err := fa.manageRecurring(ctx); err != nil {
+			if err := fa.updateStartingBalance(ctx); err != nil {
 				fmt.Printf("Error: %v\n", err)
 			}
 		case "8":
