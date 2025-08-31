@@ -22,7 +22,8 @@ type DailyCashFlow struct {
 }
 
 type FinanceService struct {
-	db database.Querier
+	db   database.Querier
+	pool *pgxpool.Pool
 }
 
 func NewFinanceService(db database.Querier) *FinanceService {
@@ -35,8 +36,16 @@ func NewFinanceServiceFromURL(ctx context.Context, dbURL string) (*FinanceServic
 		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
 	}
 	return &FinanceService{
-		db: database.New(pool),
+		db:   database.New(pool),
+		pool: pool,
 	}, nil
+}
+
+func (fs *FinanceService) Close() error {
+	if fs.pool != nil {
+		fs.pool.Close()
+	}
+	return nil
 }
 
 func (fs *FinanceService) GetStartingBalance(ctx context.Context) (float64, error) {

@@ -17,6 +17,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize app: %v", err)
 	}
+	defer func() {
+		if err := financeApp.Close(); err != nil {
+			log.Printf("shutdown error: (%T) %v", err, err)
+		}
+	}()
 
 	if err := financeApp.Run(); err != nil {
 		log.Fatalf("Application error: %v", err)

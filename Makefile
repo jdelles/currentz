@@ -20,6 +20,10 @@ build:
 run:
 	go run cmd/currentz/main.go
 
+# HTTP API Server - in development
+serve:
+	go run cmd/server/main.go
+
 # Install dependencies
 deps:
 	go mod tidy

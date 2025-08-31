@@ -49,6 +49,15 @@ func (fa *FinanceApp) Run() error {
 	return fa.mainLoop(ctx)
 }
 
+func (fa *FinanceApp) Close() error {
+	if fa.service != nil {
+		if err := fa.service.Close(); err != nil {
+			return fmt.Errorf("service close: %w", err)
+		}
+	}
+	return nil
+}
+
 func (fa *FinanceApp) setupStartingBalance(ctx context.Context) error {
 	balanceStr := getUserInput("Enter your current account balance: $")
 	balance, err := strconv.ParseFloat(balanceStr, 64)
