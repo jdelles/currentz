@@ -53,7 +53,8 @@ Options:
 4. Delete Transaction
 5. Generate Forecast
 6. Update Starting Balance
-7. Exit
+7. Manage Recurring Transactions
+8. Exit
 
 Example Transaction list: 
 

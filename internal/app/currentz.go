@@ -414,7 +414,6 @@ func (fa *FinanceApp) manageRecurring(ctx context.Context) error {
 	return nil
 }
 
-// Utility functions
 func parseDate(input string) (time.Time, error) {
 	formats := []string{
 		"2006-01-02",
@@ -462,7 +461,6 @@ func (fa *FinanceApp) updateStartingBalance(ctx context.Context) error {
 	return nil
 }
 
-// Display functions
 func DisplayChart(forecast []service.DailyCashFlow) {
 	fmt.Println("\n📊 90-Day Cash Flow Forecast")
 	fmt.Println("=" + strings.Repeat("=", 60))
@@ -472,10 +470,8 @@ func DisplayChart(forecast []service.DailyCashFlow) {
 		return
 	}
 
-	// Find min and max for scaling
 	minBalance := forecast[0].Balance
 	maxBalance := forecast[0].Balance
-
 	for _, day := range forecast {
 		if day.Balance < minBalance {
 			minBalance = day.Balance
@@ -485,35 +481,36 @@ func DisplayChart(forecast []service.DailyCashFlow) {
 		}
 	}
 
-	// Create a simple ASCII chart
-	chartWidth := 50
-	fmt.Printf("\nBalance Range: $%.2f to $%.2f\n\n", minBalance, maxBalance)
+	chartWidth := 30
 
-	// Show every 7th day (weekly view)
+	rangeSpan := maxBalance - minBalance
+	if rangeSpan == 0 {
+		rangeSpan = 1
+	}
+
 	for i := 0; i < len(forecast); i += 7 {
 		day := forecast[i]
 
-		// Calculate position in chart (0 to chartWidth)
-		var position int
-		if maxBalance != minBalance {
-			position = int(((day.Balance - minBalance) / (maxBalance - minBalance)) * float64(chartWidth))
-		} else {
-			position = chartWidth / 2
+		ratio := (day.Balance - minBalance) / rangeSpan
+		if ratio < 0 {
+			ratio = 0
+		}
+		if ratio > 1 {
+			ratio = 1
+		}
+		fill := int(ratio*float64(chartWidth) + 0.5)
+		if fill > chartWidth {
+			fill = chartWidth
 		}
 
-		// Create the bar
-		bar := strings.Repeat(" ", position) + "█"
-		if position < chartWidth {
-			bar += strings.Repeat(".", chartWidth-position)
-		}
+		bar := strings.Repeat("█", fill) + strings.Repeat(".", chartWidth-fill)
 
-		fmt.Printf("%s │%s│ $%8.2f\n",
+		fmt.Printf("%s │%s│ $%10.2f\n",
 			day.Date.Format("Jan 02"),
 			bar,
-			day.Balance)
+			day.Balance,
+		)
 	}
-
-	fmt.Println(strings.Repeat(" ", 7) + "└" + strings.Repeat("─", chartWidth+2) + "┘")
 }
 
 func DisplaySummary(forecast []service.DailyCashFlow, startingBalance float64, fs *service.FinanceService) {
