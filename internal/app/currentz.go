@@ -27,13 +27,6 @@ func NewFinanceApp(cfg *config.Config) (*FinanceApp, error) {
 	return &FinanceApp{service: svc}, nil
 }
 
-func (fa *FinanceApp) Close() error {
-	if fa.service != nil {
-		fa.service.Close()
-	}
-	return nil
-}
-
 func (fa *FinanceApp) Run() error {
 	fmt.Println("💵 Personal Finance Cash Flow Forecaster")
 	fmt.Println("========================================")
@@ -313,7 +306,7 @@ func (fa *FinanceApp) manageRecurring(ctx context.Context) error {
 		for _, r := range rs {
 			active := "✅"
 			if !r.Active {
-				active = "⏸"
+				active = "❌"
 			}
 			amt, err := service.NumericToFloat64(r.Amount)
 			if err != nil {
@@ -322,7 +315,7 @@ func (fa *FinanceApp) manageRecurring(ctx context.Context) error {
 				amt = 0
 			}
 			freq := string(r.Interval)
-			fmt.Printf("[%d] %s | %-7s | $%8.2f | %-9s | start %s | %s\n",
+			fmt.Printf("[%2d] %s | %-7s | $%10.2f | %-9s | start %s | %s\n",
 				r.ID, active, r.Type, amt, freq, r.StartDate.Time.Format("2006-01-02"), r.Description)
 		}
 	case "2":

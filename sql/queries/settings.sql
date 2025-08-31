@@ -1,7 +1,7 @@
 -- name: GetSetting :one
 SELECT value FROM settings WHERE key = $1;
 
--- name: UpsertSetting :exec
+-- name: UpdateSetting :exec
 INSERT INTO settings (key, value, updated_at)
 VALUES ($1, $2, CURRENT_TIMESTAMP)
 ON CONFLICT (key)

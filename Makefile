@@ -16,11 +16,11 @@ deps:
 	go mod tidy
 	go mod download
 
-# Generate sqlc code (uses paths from sqlc.yaml)
+# Generate sqlc code 
 sqlc-generate:
 	sqlc generate
 
-# Database migrations (point to your actual migrations folder)
+# Database migrations 
 migrate-up:
 	goose -dir sql/migrations postgres "$(DB_URL)" up
 

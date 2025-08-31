@@ -53,19 +53,19 @@ func (q *Queries) GetSetting(ctx context.Context, key string) (string, error) {
 	return value, err
 }
 
-const upsertSetting = `-- name: UpsertSetting :exec
+const updateSetting = `-- name: UpdateSetting :exec
 INSERT INTO settings (key, value, updated_at)
 VALUES ($1, $2, CURRENT_TIMESTAMP)
 ON CONFLICT (key)
 DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP
 `
 
-type UpsertSettingParams struct {
+type UpdateSettingParams struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
-func (q *Queries) UpsertSetting(ctx context.Context, arg UpsertSettingParams) error {
-	_, err := q.db.Exec(ctx, upsertSetting, arg.Key, arg.Value)
+func (q *Queries) UpdateSetting(ctx context.Context, arg UpdateSettingParams) error {
+	_, err := q.db.Exec(ctx, updateSetting, arg.Key, arg.Value)
 	return err
 }

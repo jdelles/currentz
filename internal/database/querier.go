@@ -25,7 +25,7 @@ type Querier interface {
 	ListRecurring(ctx context.Context) ([]RecurringTransactions, error)
 	SetRecurringActive(ctx context.Context, arg SetRecurringActiveParams) error
 	UpdateRecurring(ctx context.Context, arg UpdateRecurringParams) (RecurringTransactions, error)
-	UpsertSetting(ctx context.Context, arg UpsertSettingParams) error
+	UpdateSetting(ctx context.Context, arg UpdateSettingParams) error
 }
 
 var _ Querier = (*Queries)(nil)
