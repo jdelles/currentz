@@ -92,8 +92,7 @@ currentz/
 │   └── service/      # business logic (forecasting, helpers)
 ├── sql/
 │   ├── migrations/   # goose migrations
-│   ├── queries/      # sqlc query files
-│   └── schema.sql
+│   └── queries/      # sqlc query files
 ├── scripts/
 │   └── setup.sh
 ├── Makefile

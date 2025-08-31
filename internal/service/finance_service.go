@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool" // 👈 NEW
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jdelles/currentz/internal/database"
 )
 
@@ -35,8 +35,8 @@ func NewFinanceServiceFromURL(ctx context.Context, dbURL string) (*FinanceServic
 		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
 	}
 	return &FinanceService{
-		db:   database.New(pool), // sqlc Queries bound to pool
-		pool: pool,               // remember so we can Close()
+		db:   database.New(pool),
+		pool: pool,
 	}, nil
 }
 
@@ -56,7 +56,7 @@ func (fs *FinanceService) Close() {
 func (fs *FinanceService) GetStartingBalance(ctx context.Context) (float64, error) {
 	value, err := fs.db.GetSetting(ctx, "starting_balance")
 	if err != nil {
-		return 0, nil // treat missing as 0
+		return 0, nil
 	}
 	return strconv.ParseFloat(value, 64)
 }
@@ -80,7 +80,7 @@ func (fs *FinanceService) AddIncome(ctx context.Context, date time.Time, amount 
 func (fs *FinanceService) AddExpense(ctx context.Context, date time.Time, amount float64, description string) error {
 	return fs.db.CreateTransaction(ctx, database.CreateTransactionParams{
 		Date:        makePgDate(date),
-		Amount:      makePgNumeric(-amount), // store negative for expenses
+		Amount:      makePgNumeric(-amount),
 		Description: description,
 		Type:        "expense",
 	})

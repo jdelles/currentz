@@ -4,7 +4,7 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 # setup.sh
 #
-# This script is just a shortcut. 
+# This script is just a shortcut. run `make dev-setup` instead.... 
 # -----------------------------------------------------------------------------
 
 echo "🚀 Installing tools..."

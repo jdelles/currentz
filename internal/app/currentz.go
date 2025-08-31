@@ -10,34 +10,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jdelles/currentz/internal/config"
-	"github.com/jdelles/currentz/internal/database"
 	"github.com/jdelles/currentz/internal/service"
 )
 
 type FinanceApp struct {
 	service *service.FinanceService
-	pool    *pgxpool.Pool
 }
 
 func NewFinanceApp(cfg *config.Config) (*FinanceApp, error) {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	svc, err := service.NewFinanceServiceFromURL(ctx, cfg.DatabaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
+		return nil, fmt.Errorf("failed to init service: %w", err)
 	}
-	queries := database.New(pool)
-
-	return &FinanceApp{
-		pool:    pool,
-		service: service.NewFinanceService(queries),
-	}, nil
+	return &FinanceApp{service: svc}, nil
 }
 
 func (fa *FinanceApp) Close() error {
-	if fa.pool != nil {
-		fa.pool.Close()
+	if fa.service != nil {
+		fa.service.Close()
 	}
 	return nil
 }
@@ -48,7 +40,6 @@ func (fa *FinanceApp) Run() error {
 
 	ctx := context.Background()
 
-	// Check and setup starting balance
 	startingBalance, err := fa.service.GetStartingBalance(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get starting balance: %w", err)
@@ -85,9 +76,10 @@ func (fa *FinanceApp) mainLoop(ctx context.Context) error {
 		fmt.Println("4. Delete Transaction")
 		fmt.Println("5. Generate Forecast")
 		fmt.Println("6. Update Starting Balance")
-		fmt.Println("7. Exit")
+		fmt.Println("7. Manage Recurring Transactions")
+		fmt.Println("8. Exit")
 
-		choice := getUserInput("Choose an option (1-7): ")
+		choice := getUserInput("Choose an option (1-8): ")
 
 		switch choice {
 		case "1":
@@ -115,6 +107,10 @@ func (fa *FinanceApp) mainLoop(ctx context.Context) error {
 				fmt.Printf("Error: %v\n", err)
 			}
 		case "7":
+			if err := fa.manageRecurring(ctx); err != nil {
+				fmt.Printf("Error: %v\n", err)
+			}
+		case "8":
 			fmt.Println("Goodbye!")
 			return nil
 		default:
@@ -190,7 +186,7 @@ func (fa *FinanceApp) viewTransactions(ctx context.Context) error {
 
 		if tx.Type == "expense" {
 			symbol = "💸"
-			displayAmount = -amount // Show positive amount for display
+			displayAmount = -amount
 		}
 
 		fmt.Printf("[%d] %s %s | $%8.2f | %s\n",
@@ -229,27 +225,6 @@ func (fa *FinanceApp) deleteTransaction(ctx context.Context) error {
 	}
 
 	fmt.Printf("✅ Transaction %d deleted successfully.\n", id)
-	return nil
-}
-
-func (fa *FinanceApp) updateStartingBalance(ctx context.Context) error {
-	currentBalance, err := fa.service.GetStartingBalance(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get current balance: %w", err)
-	}
-
-	fmt.Printf("Current starting balance: $%.2f\n", currentBalance)
-	balanceStr := getUserInput("Enter new starting balance: $")
-	balance, err := strconv.ParseFloat(balanceStr, 64)
-	if err != nil {
-		return fmt.Errorf("invalid balance: %w", err)
-	}
-
-	if err := fa.service.SetStartingBalance(ctx, balance); err != nil {
-		return fmt.Errorf("failed to save starting balance: %w", err)
-	}
-
-	fmt.Printf("✅ Starting balance updated to $%.2f\n", balance)
 	return nil
 }
 
@@ -305,6 +280,176 @@ func (fa *FinanceApp) generateForecast(ctx context.Context) error {
 			tx.Description)
 	}
 
+	return nil
+}
+
+func (fa *FinanceApp) manageRecurring(ctx context.Context) error {
+	fmt.Println("\nRecurring Menu:")
+	fmt.Println("1. List")
+	fmt.Println("2. Add")
+	fmt.Println("3. Delete")
+	fmt.Println("4. Toggle Active")
+	choice := getUserInput("Choose (1-4): ")
+
+	switch choice {
+	case "1":
+		rs, err := fa.service.ListRecurring(ctx)
+		if err != nil {
+			return err
+		}
+		if len(rs) == 0 {
+			fmt.Println("No recurring transactions.")
+			return nil
+		}
+		for _, r := range rs {
+			active := "✅"
+			if !r.Active {
+				active = "⏸"
+			}
+			amt, err := service.NumericToFloat64(r.Amount)
+			if err != nil {
+				fmt.Printf("⚠️  could not parse amount for id=%d (%q): %v; using $0.00\n",
+					r.ID, r.Description, err)
+				amt = 0
+			}
+			freq := string(r.Interval)
+			fmt.Printf("[%d] %s | %-7s | $%8.2f | %-9s | start %s | %s\n",
+				r.ID, active, r.Type, amt, freq, r.StartDate.Time.Format("2006-01-02"), r.Description)
+		}
+	case "2":
+		desc := getUserInput("Description: ")
+		typ := strings.ToLower(getUserInput("Type (income/expense): "))
+
+		amtStr := getUserInput("Amount (e.g., 1500.00): ")
+		amt, err := strconv.ParseFloat(amtStr, 64)
+		if err != nil {
+			return fmt.Errorf("invalid amount: %w", err)
+		}
+
+		startStr := getUserInput("Start date (YYYY-MM-DD): ")
+		start, err := parseDate(startStr)
+		if err != nil {
+			return fmt.Errorf("invalid start date: %w", err)
+		}
+
+		interval := strings.ToLower(getUserInput("Interval (weekly/biweekly/monthly/yearly): "))
+
+		var dow *int
+		var dom *int
+		if interval == "weekly" || interval == "biweekly" {
+			s := strings.TrimSpace(getUserInput("Day of week (0=Sun..6=Sat, blank=use start_date): "))
+			if s != "" {
+				v, err := strconv.Atoi(s)
+				if err != nil || v < 0 || v > 6 {
+					return fmt.Errorf("invalid day_of_week: %q", s)
+				}
+				dow = &v
+			}
+		}
+		if interval == "monthly" || interval == "yearly" {
+			s := strings.TrimSpace(getUserInput("Day of month (1..31, blank=use start_date): "))
+			if s != "" {
+				v, err := strconv.Atoi(s)
+				if err != nil || v < 1 || v > 31 {
+					return fmt.Errorf("invalid day_of_month: %q", s)
+				}
+				dom = &v
+			}
+		}
+
+		var end *time.Time
+		endStr := strings.TrimSpace(getUserInput("End date (YYYY-MM-DD, blank = none): "))
+		if endStr != "" {
+			e, err := parseDate(endStr)
+			if err != nil {
+				return fmt.Errorf("invalid end date: %w", err)
+			}
+			end = &e
+		}
+
+		_, err = fa.service.CreateRecurringSimple(ctx, service.RecurringInput{
+			Description: desc,
+			Type:        typ,
+			Amount:      amt,
+			StartDate:   start,
+			Interval:    interval,
+			DayOfWeek:   dow,
+			DayOfMonth:  dom,
+			EndDate:     end,
+			Active:      true,
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Println("✅ Recurring saved.")
+
+	case "3":
+		idStr := getUserInput("ID to delete: ")
+		id, _ := strconv.Atoi(idStr)
+		if err := fa.service.DeleteRecurring(ctx, int32(id)); err != nil {
+			return err
+		}
+		fmt.Println("✅ Deleted.")
+	case "4":
+		idStr := getUserInput("ID to toggle: ")
+		id, _ := strconv.Atoi(idStr)
+		activeStr := strings.ToLower(getUserInput("Active? (y/n): "))
+		active := activeStr == "y" || activeStr == "yes"
+		if err := fa.service.SetRecurringActive(ctx, int32(id), active); err != nil {
+			return err
+		}
+		fmt.Println("✅ Updated.")
+	default:
+		fmt.Println("Cancelled.")
+	}
+	return nil
+}
+
+// Utility functions
+func parseDate(input string) (time.Time, error) {
+	formats := []string{
+		"2006-01-02",
+		"01/02/2006",
+		"1/2/2006",
+		"Jan 2, 2006",
+		"January 2, 2006",
+	}
+
+	for _, format := range formats {
+		if date, err := time.Parse(format, input); err == nil {
+			return date, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("unable to parse date: %s", input)
+}
+
+func getUserInput(prompt string) string {
+	fmt.Print(prompt)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	return strings.TrimSpace(scanner.Text())
+}
+
+func (fa *FinanceApp) updateStartingBalance(ctx context.Context) error {
+	currentBalance, err := fa.service.GetStartingBalance(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get current balance: %w", err)
+	}
+
+	fmt.Printf("Current starting balance: $%.2f\n", currentBalance)
+
+	balanceStr := getUserInput("Enter new starting balance: $")
+	balance, err := strconv.ParseFloat(balanceStr, 64)
+	if err != nil {
+		return fmt.Errorf("invalid balance: %w", err)
+	}
+
+	if err := fa.service.SetStartingBalance(ctx, balance); err != nil {
+		return fmt.Errorf("failed to save starting balance: %w", err)
+	}
+
+	fmt.Printf("✅ Starting balance updated to $%.2f\n", balance)
 	return nil
 }
 
@@ -387,30 +532,4 @@ func DisplaySummary(forecast []service.DailyCashFlow, startingBalance float64, f
 	} else if lowest.Balance < 1000 {
 		fmt.Printf("⚠️  CAUTION: Balance drops below $1,000\n")
 	}
-}
-
-// Utility functions
-func parseDate(input string) (time.Time, error) {
-	formats := []string{
-		"2006-01-02",
-		"01/02/2006",
-		"1/2/2006",
-		"Jan 2, 2006",
-		"January 2, 2006",
-	}
-
-	for _, format := range formats {
-		if date, err := time.Parse(format, input); err == nil {
-			return date, nil
-		}
-	}
-
-	return time.Time{}, fmt.Errorf("unable to parse date: %s", input)
-}
-
-func getUserInput(prompt string) string {
-	fmt.Print(prompt)
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	return strings.TrimSpace(scanner.Text())
 }

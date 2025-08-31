@@ -17,7 +17,6 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	// Get current OS user as default
 	currentUser, err := user.Current()
 	defaultUser := "postgres"
 	if err == nil {

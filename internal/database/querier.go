@@ -9,15 +9,22 @@ import (
 )
 
 type Querier interface {
+	CreateRecurring(ctx context.Context, arg CreateRecurringParams) (RecurringTransactions, error)
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) error
+	DeleteRecurring(ctx context.Context, id int32) error
 	DeleteSetting(ctx context.Context, key string) error
 	DeleteTransaction(ctx context.Context, id int32) error
 	GetAllSettings(ctx context.Context) ([]Settings, error)
 	GetAllTransactions(ctx context.Context) ([]Transactions, error)
+	GetRecurringByID(ctx context.Context, id int32) (RecurringTransactions, error)
 	GetSetting(ctx context.Context, key string) (string, error)
 	GetTransactionByID(ctx context.Context, id int32) (Transactions, error)
 	GetTransactionsByDateRange(ctx context.Context, arg GetTransactionsByDateRangeParams) ([]Transactions, error)
 	GetTransactionsByType(ctx context.Context, type_ string) ([]Transactions, error)
+	ListActiveRecurring(ctx context.Context) ([]RecurringTransactions, error)
+	ListRecurring(ctx context.Context) ([]RecurringTransactions, error)
+	SetRecurringActive(ctx context.Context, arg SetRecurringActiveParams) error
+	UpdateRecurring(ctx context.Context, arg UpdateRecurringParams) (RecurringTransactions, error)
 	UpsertSetting(ctx context.Context, arg UpsertSettingParams) error
 }
 

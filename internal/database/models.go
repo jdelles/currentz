@@ -5,8 +5,68 @@
 package database
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type RecurrenceInterval string
+
+const (
+	RecurrenceIntervalWeekly   RecurrenceInterval = "weekly"
+	RecurrenceIntervalBiweekly RecurrenceInterval = "biweekly"
+	RecurrenceIntervalMonthly  RecurrenceInterval = "monthly"
+	RecurrenceIntervalYearly   RecurrenceInterval = "yearly"
+)
+
+func (e *RecurrenceInterval) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = RecurrenceInterval(s)
+	case string:
+		*e = RecurrenceInterval(s)
+	default:
+		return fmt.Errorf("unsupported scan type for RecurrenceInterval: %T", src)
+	}
+	return nil
+}
+
+type NullRecurrenceInterval struct {
+	RecurrenceInterval RecurrenceInterval `json:"recurrence_interval"`
+	Valid              bool               `json:"valid"` // Valid is true if RecurrenceInterval is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRecurrenceInterval) Scan(value interface{}) error {
+	if value == nil {
+		ns.RecurrenceInterval, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.RecurrenceInterval.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRecurrenceInterval) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.RecurrenceInterval), nil
+}
+
+type RecurringTransactions struct {
+	ID          int32              `json:"id"`
+	Description string             `json:"description"`
+	Type        string             `json:"type"`
+	Amount      pgtype.Numeric     `json:"amount"`
+	StartDate   pgtype.Date        `json:"start_date"`
+	Interval    RecurrenceInterval `json:"interval"`
+	DayOfWeek   pgtype.Int4        `json:"day_of_week"`
+	DayOfMonth  pgtype.Int4        `json:"day_of_month"`
+	EndDate     pgtype.Date        `json:"end_date"`
+	Active      bool               `json:"active"`
+}
 
 type Settings struct {
 	Key       string           `json:"key"`
