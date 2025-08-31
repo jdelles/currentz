@@ -96,47 +96,44 @@ func (fs *FinanceService) DeleteTransaction(ctx context.Context, id int32) error
 }
 
 func (fs *FinanceService) Calculate90DayForecast(ctx context.Context, startingBalance float64) ([]DailyCashFlow, error) {
+	// 1) window (UTC midnight to avoid time drift)
+	start := time.Now().UTC().Truncate(24 * time.Hour)
+	end := start.AddDate(0, 0, 89)
+
+	// 2) one-offs from DB
 	oneOffs, err := fs.db.GetAllTransactions(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	today := time.Now().Truncate(24 * time.Hour)
-	windowEnd := today.AddDate(0, 0, 89)
-
-	recs, err := fs.ExpandRecurringBetween(ctx, today, windowEnd)
+	// 3) expanded recurrings inside the window
+	recs, err := fs.ExpandRecurringBetween(ctx, start, end)
 	if err != nil {
 		return nil, err
 	}
 
-	all := append(oneOffs, recs...)
-
-	forecast := make([]DailyCashFlow, 90)
-	currentBalance := startingBalance
-
-	for i := 0; i < 90; i++ {
-		date := today.AddDate(0, 0, i)
-		dailyChange := 0.0
-
-		for _, tx := range all {
-			if tx.Date.Time.Truncate(24 * time.Hour).Equal(date) {
-				amt, err := NumericToFloat64(tx.Amount)
-				if err != nil {
-					continue
-				}
-				dailyChange += amt
-			}
+	// 4) sum daily deltas
+	daily := make(map[time.Time]float64, 100)
+	for _, tx := range append(oneOffs, recs...) {
+		// normalize to UTC day key
+		day := tx.Date.Time.In(time.UTC).Truncate(24 * time.Hour)
+		amt, err := NumericToFloat64(tx.Amount)
+		if err != nil {
+			continue
 		}
-
-		currentBalance += dailyChange
-		forecast[i] = DailyCashFlow{
-			Date:    date,
-			Balance: currentBalance,
-			Change:  dailyChange,
-		}
+		daily[day] += amt
 	}
 
-	return forecast, nil
+	// 5) accumulate into balances
+	fc := make([]DailyCashFlow, 90)
+	bal := startingBalance
+	for i := 0; i < 90; i++ {
+		day := start.AddDate(0, 0, i)
+		change := daily[day]
+		bal += change
+		fc[i] = DailyCashFlow{Date: day, Balance: bal, Change: change}
+	}
+	return fc, nil
 }
 
 func (fs *FinanceService) FindLowestPoint(forecast []DailyCashFlow) (DailyCashFlow, int) {
