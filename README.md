@@ -1,7 +1,6 @@
 # Currentz
 
-**Currentz** is a modern personal finance app inspired by classics like Microsoft Money — rebuilt with today's tools.  
-Its primary focus is **cash flow**: helping you see not just where your money went, but where it’s going.
+**Currentz** is a modern personal finance app. Its primary focus is **cash flow**: helping you see not just where your money went, but where it’s going.
 
 ---
 
