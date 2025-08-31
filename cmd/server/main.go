@@ -25,7 +25,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("service: %v", err)
 	}
-	defer svc.Close()
+	defer func() {
+		if err := svc.Close(); err != nil {
+			log.Printf("service close error: %v", err)
+		}
+	}()
 
 	api := api.New(svc)
 	addr := getenv("HTTP_ADDR", ":8080")
