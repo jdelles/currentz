@@ -30,7 +30,12 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to create finance service:", err)
 	}
-	defer financeService.Close()
+	defer func() {
+		if err := financeService.Close(); err != nil {
+			// at least log it, or handle gracefully
+			log.Printf("error closing financeService: %v", err)
+		}
+	}()
 
 	// Create API server
 	server := api.NewAPIServer(financeService)

@@ -76,7 +76,9 @@ type ErrorResponse struct {
 func (s *APIServer) writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Printf("error encoding response: %v", err)
+	}
 }
 
 func (s *APIServer) writeError(w http.ResponseWriter, status int, message string) {

@@ -241,7 +241,11 @@ func TestTransactionEndpoints(t *testing.T) {
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("failed to close body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -312,7 +316,11 @@ func TestBalanceEndpoints(t *testing.T) {
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("failed to close body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -425,7 +433,11 @@ func TestRecurringEndpoints(t *testing.T) {
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("failed to close body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
