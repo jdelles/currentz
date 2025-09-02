@@ -511,7 +511,11 @@ func TestForecastEndpoints(t *testing.T) {
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("failed to close body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -586,7 +590,11 @@ func TestQueryParameterEndpoints(t *testing.T) {
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Errorf("failed to close body: %v", err)
+				}
+			}()
 
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
 
@@ -613,7 +621,11 @@ func TestCORSHeaders(t *testing.T) {
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("failed to close body: %v", err)
+		}
+	}()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
