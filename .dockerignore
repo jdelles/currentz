@@ -1,9 +1,15 @@
 .git
+**/node_modules/
+**/pgdata/
+**/postgres-data/
+**/*.log
 bin/
 dist/
 build/
-**/*.log
+tmp/
+coverage/
+.DS_Store
+
+# Secrets
 .env
 *.env
-githooks/
-node_modules/
